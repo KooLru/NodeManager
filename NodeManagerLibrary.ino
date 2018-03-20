@@ -1763,7 +1763,7 @@ void SensorDs18b20::setSleepDuringConversion(bool value) {
 
 // return the address of a device
 char* SensorDs18b20::_getAddress(int index) {
-  char* charAddr = "                ";
+  char* charAddr = new char[17];
   DeviceAddress device_address;
   _sensors->getAddress(device_address,index);
   String strAddr = String(device_address[0], HEX);
@@ -1775,6 +1775,7 @@ char* SensorDs18b20::_getAddress(int index) {
     strAddr.toUpperCase();
   }
   for (int j = 0; j < 16; j++) charAddr[j] = strAddr[j];
+  charAddr[16] = 0;
   return charAddr;
 }
 #endif
@@ -1977,7 +1978,7 @@ float SensorBosch::_getLastPressureSamplesAverage() {
 uint8_t SensorBosch::GetI2CAddress(uint8_t chip_id) {
   uint8_t addresses[] = {0x77, 0x76};
   uint8_t register_address = 0xD0;
-  for (int i = 0; i <= sizeof(addresses); i++) { 
+  for (int i = 0; i < sizeof(addresses); i++) { 
     uint8_t i2c_address = addresses[i];
     uint8_t value;
     Wire.beginTransmission((uint8_t)i2c_address);
@@ -2068,7 +2069,7 @@ void SensorBME280::onLoop(Child* child) {
   // Forecast Sensor
   else if (child->type == V_FORECAST) {
     float pressure = _bm->readPressure() / 100.0F;
-    _forecast(pressure);
+    ((ChildString*)child)->setValueString(_forecast(pressure));
   }
 }
 #endif
@@ -2131,7 +2132,7 @@ void SensorBMP085::onLoop(Child* child) {
   // Forecast Sensor
   else if (child->type == V_FORECAST) {
     float pressure = _bm->readPressure() / 100.0F;
-    _forecast(pressure);
+    ((ChildString*)child)->setValueString(_forecast(pressure));
   }
 }
 #endif
@@ -2193,7 +2194,7 @@ void SensorBMP280::onLoop(Child* child) {
   // Forecast Sensor
   else if (child->type == V_FORECAST) {
     float pressure = _bm->readPressure() / 100.0F;
-    _forecast(pressure);
+    ((ChildString*)child)->setValueString(_forecast(pressure));
   }
 }
 #endif
