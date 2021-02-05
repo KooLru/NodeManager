@@ -32,7 +32,15 @@ protected:
 	float _battery_max = 3.3;
 	bool _battery_internal_vcc = true;
 	int8_t _battery_pin = -1;
+	
+	// 1M, 470K divider across battery and using internal ADC ref of 1.1V
+	// ((1e6+470e3)/470e3)*1.1 = Vmax = 3.44 Volts
+	// 3.44/1023 = Volts per bit = 0.003363075
 	float _battery_volts_per_bit = 0.003363075;
+
+	// ((1e6+470e3)/470e3) = 3.127659574;
+	float _battery_divider = 3.127659574;
+
 	float _battery_adj_factor = 1.0;
 	bool _send_battery_level = true;
 	
@@ -75,6 +83,15 @@ public:
 		_battery_adj_factor = value;
 	};
 	
+	void setBatteryDivider(float upper, float lower) {
+		setBatteryDivider((upper + lower) / lower);
+	};
+	// [108?]
+	void setBatteryDivider(float value) {
+		_battery_divider = value;
+		_battery_volts_per_bit = -1;
+	};
+	
 	// if true call sendBatteryLevel() in addition to send the measured voltage back (default: true)
 	void setSendBatteryLevel(bool value) {
 		_send_battery_level = value;
@@ -83,16 +100,34 @@ public:
 	// define what to do during loop
 	void onLoop(Child* child) {
 		// measure the battery
-		float volt = 0;
-		if (_battery_internal_vcc || _battery_pin == -1) volt = (float)hwCPUVoltage()/1000;
+		float volt = 0; 
+		if (_battery_internal_vcc || _battery_pin == -1) 
+			volt = (float)hwCPUVoltage()/1000;
 		else {
+			//On AVR Vref = 1.1
+			float ref = 1.1;
+
 			// when measuring the battery from a pin, analog reference must be internal
 #if defined(CHIP_MEGA)
 			nodeManager.setAnalogReference(INTERNAL1V1);
 #elif defined(CHIP_AVR)
 			nodeManager.setAnalogReference(INTERNAL);
+#elif defined(CHIP_NRF5)
+			analogReference(AR_INTERNAL);
+			// * Internal Reference is at 0.6v and gain 5
+			ref =  3.0;
+#else //defined(CHIP_STM32) any another chip - VCC reference
+			ref = (float)hwCPUVoltage()/1000.0;
 #endif
-			volt = analogRead(_battery_pin) * _battery_volts_per_bit;
+			volt = analogRead(_battery_pin);
+			if (_battery_volts_per_bit != -1)
+				volt = volt * _battery_volts_per_bit;
+			else {
+    		// ((1e6+470e3)/470e3)*1.1 = Vmax = 3.44 Volts
+    		// 3.44/1023 = Volts per bit = 0.003363075
+				//Not of all have resolution of 1023, ADC stm32 is 12bit
+				volt = volt * ref * _battery_divider / 1023; 
+			}
 		}
 		volt = volt * _battery_adj_factor;
 		child->setValue(volt);
