@@ -38,7 +38,41 @@ public:
 
 	// define what to do during setup
 	void onLoop(Child* child) {
-		float temperature = hwCPUTemperature();
+		float temperature = 0;
+		
+#ifdef CHIP_NRF5		
+		//copy-paste from MySensors\hal\architecture\NRF5\MyHwNRF5.cpp
+		//hwCPUTemperature return INT, instead of float with 0.25 precision
+		nrf_temp_init();
+
+		for (byte i = 0; i < 10; i++) {
+
+			NRF_TEMP->TASKS_START = 1; /** Start the temperature measurement. */
+
+			/* Busy wait while temperature measurement is not finished, you can skip waiting if you enable interrupt for DATARDY event and read the result in the interrupt. */
+			/*lint -e{845} // A zero has been given as right argument to operator '|'" */
+			while (NRF_TEMP->EVENTS_DATARDY == 0) {
+				// Do nothing.
+			}
+
+			NRF_TEMP->EVENTS_DATARDY = 0;
+
+			/**@note Workaround for PAN_028 rev2.0A anomaly 29 - TEMP: Stop task clears the TEMP register. */
+			temperature += nrf_temp_read();
+
+			/**@note Workaround for PAN_028 rev2.0A anomaly 30 - TEMP: Temp module analog front end does not power down when DATARDY event occurs. */
+			NRF_TEMP->TASKS_STOP = 1; /** Stop the temperature measurement. */
+
+			delay(10);
+		}
+
+		//10 values for average
+		//Temperature in degC (0.25deg steps)
+		temperature = temperature / 40;
+
+#else
+		temperature = hwCPUTemperature();
+#endif		
 		if ( temperature != -127 )
 			child->setValue(temperature);
 	};
