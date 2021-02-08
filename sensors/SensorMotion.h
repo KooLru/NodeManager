@@ -37,7 +37,7 @@ public:
 		children.get()->setDescription(_name);
 		// trigger only when rising a HIGH value from the sensor
 		setPinInitialValue(LOW);
-		setInterruptMode(RISING);
+		setInterruptMode(CHANGE);
 	};
 };
 #endif
