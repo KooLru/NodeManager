@@ -388,6 +388,12 @@ NodeManager. Just uncomment the settings you need and the sensors you want to ad
 //unsigned int irSignal[59] = {8250,4150, 550,1600, 500,550, 500,600, 500,550, 500,1650, 500,550, 500,550, 550,550, 500,550, 500,600, 500,550, 500,550, 550,550, 500,550, 500,600, 500,550, 500,1650, 500,550, 550,550, 500,550, 500,550, 500,600, 500,550, 500,600, 500,1600, 500,600, 500,550, 500,550, 550}; 
 //SensorIRremote remote(irSignal);
 
+//#include <sensors/SensorAHT10.h>
+//SensorAHT10 aht10;
+
+//#include <sensors/SensorParent.h>
+//SensorParent parent(254);
+
 /***********************************
  * Main Sketch
  */
